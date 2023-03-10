@@ -1,0 +1,52 @@
+version: '3.9'
+
+networks:
+  backend:
+
+volumes:
+  pg-data:
+
+services:
+  db-postgres:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: User
+      POSTGRES_PASSWORD: Password
+      POSTGRES_DB: Docker_compose_DB
+    networks:
+      - backend
+    hostname: db-postgres
+
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    command: sh ./run.sh
+    depends_on:
+      - db-postgres
+    volumes:
+      - ./backend/:/usr/src/backend/
+      - ./static:/usr/src/backend/static/
+    networks:
+      - backend
+    hostname: api
+
+  nginx:
+    build: ./nginx
+    ports:
+      - 8080:80
+    depends_on:
+      - api
+    volumes:
+      - ./static/:/usr/share/nginx/static/
+      - ./nginx_logs/:/var/log/nginx/
+    networks:
+      - backend
+    hostname: nginx
